@@ -2,7 +2,7 @@
 
 # Install Offline YUM Repository Server
 
-Welcome to the **Install Offline YUM Repository Server** repository! This repository contains all the necessary files and instructions to set up an air-gapped YUM repository server for RedHat-based systems, ensuring a secure and isolated environment. By using an offline YUM repository, you can enhance system security, minimize dependency on external networks, and maintain control over package updates in air-gapped or restricted environments.
+Welcome to the **Install Offline YUM Repository Server** repository! This repository contains all the necessary files to assist in setting up an air-gapped YUM repository server for RedHat-based systems, ensuring a secure and isolated environment. Detailed instructions for the setup process are available in the referenced blog. By using an offline YUM repository, you can enhance system security, minimize dependency on external networks, and maintain control over package updates in air-gapped or restricted environments.
 
 ---
 
