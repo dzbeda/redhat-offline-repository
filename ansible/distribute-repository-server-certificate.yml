@@ -1,0 +1,38 @@
+- hosts:
+      - repository-server
+  become: true
+  any_errors_fatal: true
+  vars_files:
+    - ./project-inputs.yml
+  tasks:
+
+  ## Copy YUM Repository certificate to master server
+  - name: Copy Repository public certificate to the ansible server
+    fetch:
+      src: "{{ certificate_configuration.certificate_path }}{{ certificate_configuration.certificate_file_name }}"
+      dest: /tmp/
+      flat: yes
+
+## Distribute YUM repository certificate
+
+- hosts:
+    - redhat-client
+    - rocky-client
+  any_errors_fatal: true
+  become: true
+  vars_files:
+    - ./project-inputs.yml
+  tasks:
+
+    - name: Copy Repository certificate to all client servers
+      copy:
+        src: /tmp/{{ certificate_configuration.certificate_file_name }}
+        dest: "{{ certificate_configuration.approved_certificate_path }}{{ certificate_configuration.certificate_file_name }}"
+
+    - name: Trust Certificate
+      shell: update-ca-trust extract
+
+    # Update Cache 
+
+    - name: Clean Yum cache
+      shell: dnf clean all

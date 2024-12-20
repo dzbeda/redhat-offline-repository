@@ -1,0 +1,44 @@
+## Playbook ##
+- hosts:
+    - redhat-client
+    - rocky-client
+  become: true
+  gather_facts: true
+  vars_files:
+    - ./project-inputs.yml
+  tasks:
+
+## Check if offline repo server is avalible ##
+
+  - name: Verify server is available
+    ping:
+
+  
+  ## Update /etc/hosts ##
+
+  - name: Update server etc/host
+    lineinfile:
+        path: /etc/hosts
+        line: "{{ yum_repository.ip }}  {{ yum_repository.hostname }}"
+        state: present
+        backup: yes
+
+  ## Add offline repository to repo list 
+  
+  - name: add offline repo
+    yum_repository:
+      name: "{{ offline_repo.yum_repository_name }}"
+      description: "{{ offline_repo.yum_repository_description }}"
+      baseurl:  "{{ offline_repo.yum_repository_address}}/{{offline_repo.yum_repository_path }}"
+      enabled: "{{ offline_repo.yum_repository_enabled }}"
+      gpgcheck: "{{ offline_repo.yum_repository_gpgcheck }}"
+      
+  - name: add addtioanl value to offline repo client file 
+    lineinfile:
+          path: /etc/yum.repos.d/{{ offline_repo.yum_repository_name }}.repo
+          line: 'module_hotfixes = true'
+
+  # Update Cache 
+
+  - name: Clean Yum cache
+    shell: dnf clean all

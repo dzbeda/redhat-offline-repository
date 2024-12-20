@@ -1,0 +1,186 @@
+## Playbook ##
+- hosts: repository-server
+  become: true
+  gather_facts: true
+  vars_files:
+    - ./project-inputs.yml
+  tasks:
+
+## Check if offline repo server is avalible ##
+
+  - name: Verify server is available
+    ping:
+
+## Set Hostname and verify that the IP in the project-inputs.yml match to the server real IP ##
+
+  - name: update hostname
+    hostname:
+      name : "{{ yum_repository.hostname }}"
+    when: yum_repository.ip == ansible_default_ipv4.address
+
+## Update /etc/hosts ##
+
+  - name: Update server etc/host
+    lineinfile:
+        path: /etc/hosts
+        line: "{{ yum_repository.ip }}  {{ yum_repository.hostname }}"
+        state: present
+        backup: yes
+
+## Disable SElinux and firewall ##
+
+  - name: Stop and Disable firewalld in boot
+    systemd:
+      name: firewalld
+      state: stopped
+      enabled: no
+
+## Update SELinux configuration ##
+  - name: Put SELinux in permissive mode, logging actions that would be blocked. ; Value is updated in /etc/selinux/config file
+    selinux:
+      policy: targeted
+      state: permissive
+
+## Copy mandatory packages to ther offline-repo server ##
+
+  - name: Copy mandatory packages to offline repository server under /var/www/html/{{ offline_repo.yum_repository_path }}
+    copy:
+      src: "{{ source_packages_path.mandatory_packages_files_location }}/"
+      dest: "/var/www/html/{{ offline_repo.yum_repository_path }}"
+      #owner: maintenance
+      #group: maintenance
+
+## Copy project packages to ther offline-repo server ##
+
+  - name: Copy project packages to offline repository server under /var/www/html/{{ offline_repo.yum_repository_path }}
+    copy:
+      src: "{{ source_packages_path.project_packages_files_location }}/"
+      dest: "/var/www/html/{{ offline_repo.yum_repository_path }}"
+      #owner: maintenance
+      #group: maintenance
+
+  
+## Install RPM packages that are required for repo creation ##
+# Note: file name can be changed based on the released version - if the packges version was updated make sure to updat the version #
+# Note: in my git repo you can find a script that can download the files - download-mandatory-packages.sh #
+# Note: do not change the file installation order #
+  - name: Install createrepo and HTTPD with SSL using local RPM files.  Please note that HTTPd must be installed as a group
+    shell: dnf localinstall -y {{ item }}
+    args:
+      chdir: /var/www/html/{{ offline_repo.yum_repository_path }}/
+    with_items:
+      - drpm-0.4.1-3.el8.x86_64.rpm createrepo_c-libs-0.17.7-6.el8.x86_64.rpm createrepo_c-0.17.7-6.el8.x86_64.rpm
+      - apr-1.6.3-12.el8.x86_64.rpm apr-util-1.6.1-9.el8.x86_64.rpm httpd-2.4.37-65.module+el8.10.0+22196+d82931da.2.x86_64.rpm httpd-filesystem-2.4.37-65.module+el8.10.0+22196+d82931da.2.noarch.rpm httpd-tools-2.4.37-65.module+el8.10.0+22196+d82931da.2.x86_64.rpm mod_http2-1.15.7-10.module+el8.10.0+22335+bb25e47a.1.x86_64.rpm redhat-logos-httpd-84.5-2.el8.noarch.rpm mod_ssl-2.4.37-65.module+el8.10.0+22196+d82931da.2.x86_64.rpm
+    ignore_errors: yes
+
+### Update HTTPD Configuration
+
+  - name: Update http.conf file
+    lineinfile:
+      path: /etc/httpd/conf/httpd.conf
+      regexp: '^.*.AddType application/x-gzip .gz .tgz'
+      line:     AddType application/x-gzip .gz .tgz .parcel
+      backrefs: yes
+
+  - name: Update welocome.conf file for enabling index
+    lineinfile:
+      path: /etc/httpd/conf.d/welcome.conf
+      regexp: '^.*.Options -Indexes'
+      line:     Options +Indexes
+      backrefs: yes
+
+  - name: Disable port 80
+    lineinfile:
+      path: /etc/httpd/conf/httpd.conf
+      regexp: 'Listen 80'
+      line: '#Listen 80'
+      backrefs: yes
+
+### Update ssl.conf Configuration
+
+  - name: Update ssl.conf SSLCertificateFile
+    lineinfile:
+      path: /etc/httpd/conf.d/ssl.conf
+      regexp: '^SSLCertificateFile'
+      line:  SSLCertificateFile {{ certificate_configuration.certificate_path }}{{ certificate_configuration.certificate_file_name }}
+      backrefs: yes
+
+  - name: Update ssl.conf SSLCertificateKeyFile
+    lineinfile:
+      path: /etc/httpd/conf.d/ssl.conf
+      regexp: 'SSLCertificateKeyFile'
+      line:  SSLCertificateKeyFile {{ certificate_configuration.private_key_path }}{{ certificate_configuration.private_key_file_name }}
+      backrefs: yes
+
+### Create Self Sign Certificate
+  - name: check if private key exsits
+    stat:
+      path: "{{certificate_configuration.private_key_path}}{{certificate_configuration.private_key_file_name}}"
+    register: file_exsits
+
+  - name: user prompt - generate_private_key
+    pause:
+      prompt: "Private key exists, click [1] to skip the key creation or click [2] to re-create the key - This will require you to distribute the keys again"
+      echo: true
+      minutes: 1
+    register: create_key
+    when: file_exsits.stat.exists == True
+
+  - name: Generate an OpenSSL private key
+    shell: openssl gen{{ certificate_configuration.key_type }} -out {{ certificate_configuration.private_key_path }}{{ certificate_configuration.private_key_file_name }}  {{ certificate_configuration.key_size }}
+    when: file_exsits.stat.exists == false or (create_key is defined and create_key.user_input == "2")
+
+  - name: Generate an OpenSSL Certificate Signing Request
+    shell: openssl req -new -key {{ certificate_configuration.private_key_path }}{{ certificate_configuration.private_key_file_name }} -out {{ certificate_configuration.certificate_request_path }}{{ certificate_configuration.certificate_request_file_name }} -subj "/C={{ certificate_configuration.country_name }}/ST= {{ certificate_configuration.state }}/L={{ certificate_configuration.province }}/O={{ certificate_configuration.organization_name }}/CN={{ certificate_configuration.server_hostname }}"
+    when: file_exsits.stat.exists == false or (create_key is defined and create_key.user_input == "2")
+
+  - name: Generate an OpenSSL Certificate
+    shell: openssl x509 -req -days {{ certificate_configuration.certificate_validation_period }} -in {{ certificate_configuration.certificate_request_path }}{{ certificate_configuration.certificate_request_file_name }} -signkey {{ certificate_configuration.private_key_path }}{{ certificate_configuration.private_key_file_name }}  -out {{ certificate_configuration.certificate_path }}{{ certificate_configuration.certificate_file_name }}
+    when: file_exsits.stat.exists == false or (create_key is defined and create_key.user_input == "2")
+
+  - name: Copy certificate to /etc/pki/ca-trust/source/anchors
+    shell: cp {{ certificate_configuration.certificate_path }}{{ certificate_configuration.certificate_file_name }} /etc/pki/ca-trust/source/anchors/
+    when: file_exsits.stat.exists == false or (create_key is defined and create_key.user_input == "2")
+
+  - name: Add {{ certificate_configuration.server_hostname }} certificate to server
+    shell: update-ca-trust extract
+    when: file_exsits.stat.exists == false or (create_key is defined and create_key.user_input == "2")
+
+## Create repo - offline repo
+
+  - name: Create repodata for the offline repo
+    command: createrepo /var/www/html/{{ offline_repo.yum_repository_path }}/
+
+
+# Restart HTTPD and enable in boot
+
+  - name: Restart HTTPD and enable in boot
+    systemd:
+      name: httpd
+      state: restarted
+      enabled: yes
+
+# Adding the offline repository to repo list 
+
+  - name: add offline repo
+    yum_repository:
+      name: "{{ offline_repo.yum_repository_name }}"
+      description: "{{ offline_repo.yum_repository_description }}"
+      baseurl:  "{{ offline_repo.yum_repository_address}}/{{offline_repo.yum_repository_path }}"
+      enabled: "{{ offline_repo.yum_repository_enabled }}"
+      gpgcheck: "{{ offline_repo.yum_repository_gpgcheck }}"
+      
+  - name: add addtioanl value to offline repo client file 
+    lineinfile:
+          path: /etc/yum.repos.d/{{ offline_repo.yum_repository_name }}.repo
+          line: 'module_hotfixes = true'
+
+# Update Cache 
+
+  - name: Clean Yum cache
+    shell: yum clean all
+
+
+# Server reboot
+  - name: reboot repository server
+    reboot:

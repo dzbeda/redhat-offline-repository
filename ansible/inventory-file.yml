@@ -1,0 +1,8 @@
+[repository-server]
+10.100.102.30
+
+[redhat-client]
+10.100.102.36
+
+[rocky-client]
+10.100.102.35

@@ -1,0 +1,43 @@
+### Yum Repository Configuration ###
+
+## Define the IP address and hostname to assign to the server ##
+yum_repository:
+     ip: 10.100.102.31
+     hostname: offline-repository
+
+## Define the paths where the mandatory and project packages are located on the Ansible server ##
+source_packages_path:
+     mandatory_packages_files_location: /mnt/d/projects/offline-repo/repo-mandatory-packages
+     project_packages_files_location: /mnt/d/projects/offline-repo/repo-project-packages
+
+## Multi-Repository Support ##
+## Use the following template to configure multiple repositories as needed ##
+offline_repo:
+     yum_repository_name: offline-repo
+     yum_repository_address: "https://{{ yum_repository.hostname }}"
+     yum_repository_path: offline-repo
+     yum_repository_description: offline repo rpm files
+     yum_repository_enabled: 1
+     yum_repository_gpgcheck: 0
+
+## Do Not Modify !!! ##
+## Certificate Configuration ##
+## This section contains the parameters required for configuring the YUM certificate ##
+certificate_configuration:
+     server_hostname: "{{ yum_repository.hostname }}"
+     private_key_path: /etc/pki/tls/private/
+     private_key_file_name: private.key
+     certificate_request_path: /etc/pki/tls/certs/
+     certificate_request_file_name: certificate_request.csr
+     certificate_path: /etc/pki/tls/certs/
+     certificate_file_name: "{{ yum_repository.hostname }}.crt"
+     key_size: 4096
+     passphrase:
+     key_type: rsa
+     country_name: xx
+     state: xx
+     province: xx
+     email_address:
+     organization_name: "{{ yum_repository.hostname }}"
+     certificate_validation_period: 1000
+     approved_certificate_path: /etc/pki/ca-trust/source/anchors/
