@@ -17,7 +17,8 @@ Welcome to the **Install Offline YUM Repository Server** repository! This reposi
 ## Reference Blog
 For a detailed explanation of how to create an air-gapped repository for RedHat-based systems, refer to the following blog post:
 
-- Install Your Own Air-Gapped Offline Repository Based on RedHat Distribution - (https://medium.com/@dudu.zbeda_13698/install-your-own-air-gapped-repository-based-on-redhat-distribution-ff76afe48640](https://medium.com/@dudu.zbeda_13698/how-to-set-up-an-air-gapped-yum-repository-for-redhat-based-systems-ff76afe48640)
+Install Your Own Air-Gapped Offline Repository Based on RedHat Distribution: [https://medium.com/@dudu.zbeda_13698/how-to-set-up-an-air-gapped-yum-repository-for-redhat-based-systems-ff76afe48640](https://medium.com/@dudu.zbeda_13698/how-to-set-up-an-air-gapped-yum-repository-for-redhat-based-systems-ff76afe48640)
+
 
 ---
 
