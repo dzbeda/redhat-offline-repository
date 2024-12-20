@@ -12,11 +12,11 @@ PACKAGES=(
     "createrepo_c-0.17.7-6.el8.x86_64"
     "apr-1.6.3-12.el8.x86_64"
     "apr-util-1.6.1-9.el8.x86_64"
-    "httpd-2.4.37-65.module+el8.10.0+22196+d82931da.2.x86_64"
-    "httpd-filesystem-2.4.37-65.module+el8.10.0+22196+d82931da.2.noarch"
-    "httpd-tools-2.4.37-65.module+el8.10.0+22196+d82931da.2.x86_64"
-    "mod_http2-1.15.7-10.module+el8.10.0+21653+eaff63f0.x86_64"
-    "mod_ssl-2.4.37-65.module+el8.10.0+22196+d82931da.2.x86_64"
+    "httpd-2.4.37-65.module+el8.10.0+1842+4a9649e8.2"
+    "httpd-filesystem-2.4.37-65.module+el8.10.0+1842+4a9649e8.2.noarch"
+    "httpd-tools-2.4.37-65.module+el8.10.0+1842+4a9649e8.2.x86_64"
+    "mod_http2-1.15.7-10.module+el8.10.0+1883+38ed6c58.1.x86_64"
+    "mod_ssl-1:2.4.37-65.module+el8.10.0+1842+4a9649e8.2.x86_64"
 )
 
 # Notify the user that the download process is starting.
