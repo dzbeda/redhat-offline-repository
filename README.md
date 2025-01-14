@@ -32,7 +32,7 @@ You can access this repository here:
 Stay updated on more guides and insights related to Linux, DevOps, and system integration:
 For updates please follow me on 
 - LinkedIn: [www.linkedin.com/in/davidzbeda](https://www.linkedin.com/in/davidzbeda)
-- Medium: [[@dudu.zbeda_13698](https://medium.com/@dudu.zbeda_13698](https://medium.com/@david-dudu-zbeda))
+- Medium: [https://medium.com/@david-dudu-zbeda](https://medium.com/@dudu.zbeda_13698](https://medium.com/@david-dudu-zbeda))
 
 ---
 
